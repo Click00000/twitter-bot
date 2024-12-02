@@ -1,0 +1,12 @@
+{
+    "tracked_profiles": [
+        {
+            "profile_url": "https://x.com/EtkilesimArena",
+            "like_count": 2,
+            "retweet_count": 1,
+            "check_interval": 1,
+            "last_tweet_id": null,
+            "is_active": true
+        }
+    ]
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twitter Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f5f8fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .actions {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .action-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            flex: 1;
+            min-width: 200px;
+        }
+        .status-box {
+            background: #e8f5fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1da1f2;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #1da1f2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #1991db;
+        }
+        h3 {
+            margin-top: 0;
+            color: #1da1f2;
+        }
+        .profile-list {
+            margin-top: 20px;
+        }
+        .profile-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #1da1f2;
+        }
+        .profile-item p {
+            margin: 5px 0;
+        }
+        .profile-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .profile-controls button {
+            flex: 1;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status-box">
+            <strong>Aktif Hesap Sayısı:</strong> {{ active_accounts }}
+        </div>
+        
+        <div class="section">
+            <h3>Like ve Retweet İşlemleri</h3>
+            <form action="/process_engagement" method="post">
+                <div class="input-group">
+                    <label>Tweet URL:</label>
+                    <input type="text" name="tweet_url" required>
+                </div>
+                <div class="actions">
+                    <div class="action-box">
+                        <label>Like Sayısı:</label>
+                        <input type="number" name="like_count" min="0" required>
+                    </div>
+                    <div class="action-box">
+                        <label>Retweet Sayısı:</label>
+                        <input type="number" name="retweet_count" min="0" required>
+                    </div>
+                </div>
+                <button type="submit">Like ve RT Başlat</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h3>Takip İşlemleri</h3>
+            <form action="/process_follow" method="post">
+                <div class="input-group">
+                    <label>Profil URL:</label>
+                    <input type="text" name="profile_url" required>
+                </div>
+                <div class="action-box">
+                    <label>Takip Sayısı:</label>
+                    <input type="number" name="follow_count" min="0" required>
+                </div>
+                <button type="submit">Takip Et</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h3>Profil Takip Sistemi</h3>
+            <form action="/add_profile" method="post">
+                <div class="input-group">
+                    <label>Profil URL:</label>
+                    <input type="text" name="profile_url" required>
+                </div>
+                <div class="actions">
+                    <div class="action-box">
+                        <label>Like Sayısı:</label>
+                        <input type="number" name="like_count" min="0" required>
+                    </div>
+                    <div class="action-box">
+                        <label>Retweet Sayısı:</label>
+                        <input type="number" name="retweet_count" min="0" required>
+                    </div>
+                    <div class="action-box">
+                        <label>Kontrol Sıklığı (Dakika):</label>
+                        <input type="number" name="check_interval" min="1" required>
+                    </div>
+                </div>
+                <button type="submit">Profil Ekle</button>
+            </form>
+
+            <div class="profile-list">
+                <h3>Takip Edilen Profiller</h3>
+                {% for profile in tracked_profiles %}
+                <div class="profile-item">
+                    <p><strong>Profil:</strong> {{ profile.profile_url }}</p>
+                    <p><strong>Like:</strong> {{ profile.like_count }} | <strong>RT:</strong> {{ profile.retweet_count }}</p>
+                    <p><strong>Kontrol Sıklığı:</strong> {{ profile.check_interval }} dakika</p>
+                    <div class="profile-controls">
+                        <form action="/toggle_profile" method="post" style="flex: 1;">
+                            <input type="hidden" name="profile_url" value="{{ profile.profile_url }}">
+                            <button type="submit">{{ 'Durdur' if profile.is_active else 'Başlat' }}</button>
+                        </form>
+                        <form action="/delete_profile" method="post" style="flex: 1;">
+                            <input type="hidden" name="profile_url" value="{{ profile.profile_url }}">
+                            <button type="submit" class="delete-btn">Sil</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
