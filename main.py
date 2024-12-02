@@ -1,5 +1,6 @@
+# PARÇA 1
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -7,10 +8,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from concurrent.futures import ThreadPoolExecutor
+from webdriver_manager.chrome import ChromeDriverManager
 import json
 import time
 import random
-from webdriver_manager.chrome import ChromeDriverManager
+from profile_tracker import load_tracked_profiles, save_tracked_profiles
 
 template_dir = os.path.abspath(os.path.dirname(__file__))
 template_dir = os.path.join(template_dir, 'templates')
@@ -39,7 +41,7 @@ def setup_driver():
     driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'})
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     return driver
-
+# PARÇA 2
 def twitter_login(driver, username, password):
     try:
         driver.get("https://twitter.com/i/flow/login")
@@ -112,7 +114,7 @@ def retweet(driver, tweet_url):
     except Exception as e:
         print(f"Retweet hatası: {str(e)}")
         return False
-
+# PARÇA 3
 def process_account(account, url, action_type):
     driver = setup_driver()
     try:
@@ -127,7 +129,10 @@ def process_account(account, url, action_type):
 @app.route('/')
 def home():
     active_accounts = get_active_accounts()
-    return render_template('index.html', active_accounts=active_accounts)
+    tracked_profiles = load_tracked_profiles()['tracked_profiles']
+    return render_template('index.html', 
+                         active_accounts=active_accounts,
+                         tracked_profiles=tracked_profiles)
 
 @app.route('/process_engagement', methods=['POST'])
 def process_engagement():
@@ -155,6 +160,60 @@ def process_engagement():
             success_retweets = sum(1 for future in retweet_futures if future.result())
     
     return f"Etkileşim işlemi tamamlandı! {success_likes} like, {success_retweets} retweet başarılı."
+
+@app.route('/add_profile', methods=['POST'])
+def add_profile():
+    from profile_tracker import start_tracking
+    
+    profile_data = {
+        "profile_url": request.form['profile_url'],
+        "like_count": int(request.form['like_count']),
+        "retweet_count": int(request.form['retweet_count']),
+        "check_interval": int(request.form['check_interval']),
+        "last_tweet_id": None,
+        "is_active": True
+    }
+    
+    data = load_tracked_profiles()
+    data['tracked_profiles'].append(profile_data)
+    save_tracked_profiles(data)
+    start_tracking(profile_data)
+    
+    return redirect('/')
+
+@app.route('/delete_profile', methods=['POST'])
+def delete_profile():
+    from profile_tracker import stop_tracking
+    
+    profile_url = request.form['profile_url']
+    data = load_tracked_profiles()
+    stop_tracking(profile_url)
+    
+    data['tracked_profiles'] = [p for p in data['tracked_profiles'] 
+                              if p['profile_url'] != profile_url]
+    save_tracked_profiles(data)
+    
+    return redirect('/')
+
+@app.route('/toggle_profile', methods=['POST'])
+def toggle_profile():
+    from profile_tracker import start_tracking, stop_tracking
+    
+    profile_url = request.form['profile_url']
+    data = load_tracked_profiles()
+    
+    for profile in data['tracked_profiles']:
+        if profile['profile_url'] == profile_url:
+            profile['is_active'] = not profile['is_active']
+            
+            if profile['is_active']:
+                start_tracking(profile)
+            else:
+                stop_tracking(profile_url)
+            break
+    
+    save_tracked_profiles(data)
+    return redirect('/')
 
 if __name__ == '__main__':
     app.run(debug=True)
