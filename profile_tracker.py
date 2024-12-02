@@ -42,7 +42,6 @@ def setup_driver():
     driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'})
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     return driver
-
 def check_new_tweets(profile):
     print(f"Checking tweets for {profile['profile_url']}")
     driver = setup_driver()
